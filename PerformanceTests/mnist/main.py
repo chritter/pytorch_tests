@@ -70,11 +70,13 @@ class Net(nn.Module):
             self.bn1 = nn.BatchNorm2d(32)
             self.bn2 = nn.BatchNorm2d(64)
 
+        self.save_neuron = []
 
     def forward(self, x):
         x = self.conv1(x)
         if self.bn: x = self.bn1(x)
         x = F.relu(x)
+        self.save_neuron.append(x[0,0,0,0])
         x = self.conv2(x)
         if self.bn: x = self.bn2(x)
         x = F.relu(x)
@@ -184,8 +186,10 @@ def main():
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch)
-        test(model, device, test_loader)
+        #test(model, device, test_loader)
         scheduler.step()
+
+    print('test')
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")

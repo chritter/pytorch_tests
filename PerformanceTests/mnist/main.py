@@ -32,8 +32,30 @@ torch.set_default_tensor_type('torch.cuda.FloatTensor')
 # Params size (MB): 4.58
 # Estimated Total Size (MB): 5.10
 
+# WITH BATCHNORM
+# ----------------------------------------------------------------
+#         Layer (type)               Output Shape         Param #
+# ================================================================
+#             Conv2d-1           [-1, 32, 26, 26]             320
+#        BatchNorm2d-2           [-1, 32, 26, 26]              64
+#             Conv2d-3           [-1, 64, 24, 24]          18,496
+#        BatchNorm2d-4           [-1, 64, 24, 24]             128
+#          Dropout2d-5           [-1, 64, 12, 12]               0
+#             Linear-6                  [-1, 128]       1,179,776
+#          Dropout2d-7                  [-1, 128]               0
+#             Linear-8                   [-1, 10]           1,290
+# ================================================================
+# Total params: 1,200,074
+# Trainable params: 1,200,074
+# Non-trainable params: 0
+# ----------------------------------------------------------------
+# Input size (MB): 0.00
+# Forward/backward pass size (MB): 0.96
+# Params size (MB): 4.58
+# Estimated Total Size (MB): 5.55
+
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, batchnorm=False):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, 3, 1)
         self.conv2 = nn.Conv2d(32, 64, 3, 1)
@@ -42,10 +64,19 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, 10)
 
+        self.bn= batchnorm
+
+        if self.bn:
+            self.bn1 = nn.BatchNorm2d(32)
+            self.bn2 = nn.BatchNorm2d(64)
+
+
     def forward(self, x):
         x = self.conv1(x)
+        if self.bn: x = self.bn1(x)
         x = F.relu(x)
         x = self.conv2(x)
+        if self.bn: x = self.bn2(x)
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
         x = self.dropout1(x)
@@ -58,10 +89,13 @@ class Net(nn.Module):
         return output
 
 
+
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
+
+        # set zero: {'eps': 1e-06, 'initial_lr': 1.0, 'lr': 1.0, 'params': model_params, 'rho': 0.9, 'weight_decay': 0}]
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
@@ -143,7 +177,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset1,**kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **kwargs)
 
-    model = Net().to(device)
+    model = Net(batchnorm=True).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     # Decays the learning rate of each parameter group by gamma every epoch

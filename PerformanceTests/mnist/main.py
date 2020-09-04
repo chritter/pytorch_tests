@@ -12,6 +12,26 @@ torch.multiprocessing.set_start_method('spawn', force=True)
 
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
+
+# ----------------------------------------------------------------
+#         Layer (type)               Output Shape         Param #
+# ================================================================
+#             Conv2d-1           [-1, 32, 26, 26]             320
+#             Conv2d-2           [-1, 64, 24, 24]          18,496
+#          Dropout2d-3           [-1, 64, 12, 12]               0
+#             Linear-4                  [-1, 128]       1,179,776
+#          Dropout2d-5                  [-1, 128]               0
+#             Linear-6                   [-1, 10]           1,290
+# ================================================================
+# Total params: 1,199,882
+# Trainable params: 1,199,882
+# Non-trainable params: 0
+# ----------------------------------------------------------------
+# Input size (MB): 0.00
+# Forward/backward pass size (MB): 0.52
+# Params size (MB): 4.58
+# Estimated Total Size (MB): 5.10
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -126,6 +146,7 @@ def main():
     model = Net().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
+    # Decays the learning rate of each parameter group by gamma every epoch
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch)
